@@ -31,10 +31,10 @@
 // #define dprintf(args...) do { if (1) printf(args); } while(0)
 
 extern struct libusb_device_handle *handle;
-unsigned char *readbuf;
-uint32_t getnextpkt; // set by the callback function
-uint32_t syncackpkt; // synch / ack flag used by BULK OUT cb function
-uint32_t byteoffset;
+static unsigned char *readbuf;
+static uint32_t getnextpkt; // set by the callback function
+static uint32_t syncackpkt; // synch / ack flag used by BULK OUT cb function
+static uint32_t byteoffset;
 
 // callback functions for async USB transfers
 static void cbBulkIn(struct libusb_transfer *transfer);

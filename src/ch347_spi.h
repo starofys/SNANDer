@@ -15,17 +15,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
  */
-#ifndef __CH341_SPI_H__
-#define __CH341_SPI_H__
-
+#ifndef __CH347_SPI_H__
+#define __CH347_SPI_H__
 #include "device_opt.h"
+extern device_spi_driver_t ch347;
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <string.h>
-
-#define min(a,b) (((a)<(b))?(a):(b))
-#define max(a,b) (((a)>(b))?(a):(b))
-extern device_spi_driver_t ch341;
-#endif /* __CH341_SPI_H__ */
-/* End of [ch341a_spi.h] package */
+#endif /* __CH347_SPI_H__ */
+/* End of [ch347_spi.h] package */

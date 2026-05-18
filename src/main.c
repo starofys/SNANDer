@@ -26,6 +26,7 @@
 
 #include "flashcmd_api.h"
 #include "ch341a_spi.h"
+#include "ch347_spi.h"
 #include "spi_nand_flash.h"
 
 struct flash_cmd prog;
@@ -85,6 +86,13 @@ void usage(void)
 	printf(use);
 	exit(0);
 }
+
+static device_spi_driver_t *drivers[] = {
+	&ch347,
+	&ch341,
+	NULL,
+} ;
+device_spi_driver_t *device_opt;
 
 int main(int argc, char* argv[])
 {
@@ -214,11 +222,18 @@ int main(int argc, char* argv[])
 		printf("Conflicting options, only one option at a time.\n\n");
 		return -1;
 	}
-
-	if (ch341a_spi_init() < 0) {
+	device_spi_driver_t **driver_ptr = drivers;
+	while (*driver_ptr) {
+		if ((*driver_ptr)->init() == 0) {
+			break;
+		}
+		driver_ptr++;
+	}
+	if (*driver_ptr == NULL) {
 		printf("Programmer device not found!\n\n");
 		return -1;
 	}
+	device_opt = *driver_ptr;
 
 	if((flen = flash_cmd_init(&prog)) <= 0)
 		goto out;
@@ -383,11 +398,16 @@ very:
 		printf("Status: OK\n");
 		goto okout;
 	}
-
+	goto okout;
 out:	//exit with errors
-	ch341a_spi_shutdown();
+	if (device_opt) {
+		device_opt->shutdown();
+	}
+
 	return -1;
 okout:	//exit without errors
-	ch341a_spi_shutdown();
+	if (device_opt) {
+		device_opt->shutdown();
+	}
 	return 0;
 }

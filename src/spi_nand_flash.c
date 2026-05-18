@@ -362,6 +362,20 @@ static struct SPI_NAND_FLASH_INFO_T _current_flash_info_t;	/* Store the current 
 
 static const struct SPI_NAND_FLASH_INFO_T spi_nand_flash_tables[] = {
 	{
+
+		.mfr_id = 0xc2,
+		.dev_id = 0xf1,
+		.ptr_name = "T30",
+		.page_size = _SPI_NAND_PAGE_SIZE_2KBYTE,
+		.oob_size = _SPI_NAND_OOB_SIZE_128BYTE,
+		.device_size =				_SPI_NAND_CHIP_SIZE_1GBIT,
+		.erase_size =				_SPI_NAND_BLOCK_SIZE_128KBYTE,
+		.dummy_mode =				SPI_NAND_FLASH_READ_DUMMY_BYTE_APPEND,
+		.read_mode =				SPI_NAND_FLASH_READ_SPEED_MODE_DUAL,
+		.write_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_SINGLE,
+		.feature =				SPI_NAND_FLASH_FEATURE_NONE,
+	},
+	{
 		mfr_id:					_SPI_NAND_MANUFACTURER_ID_GIGADEVICE,
 		dev_id:					_SPI_NAND_DEVICE_ID_GD5F1GQ4UAYIG,
 		ptr_name:				"GIGADEVICE GD5F1GQ4UA",

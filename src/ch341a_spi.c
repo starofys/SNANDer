@@ -266,7 +266,7 @@ err:
 
 /*   Set the I2C bus speed (speed(b1b0): 0 = 20kHz; 1 = 100kHz, 2 = 400kHz, 3 = 750kHz).
  *   Set the SPI bus data width (speed(b2): 0 = Single, 1 = Double).  */
-int config_stream(unsigned int speed)
+static int config_stream(unsigned int speed)
 {
 	if (handle == NULL)
 		return -1;
@@ -306,7 +306,7 @@ static uint8_t swap_byte(uint8_t x)
  *	D6/21	unused	(DIN2)
  *	D7/22	SO/2	(DIN)
  */
-int enable_pins(bool enable)
+static int enable_pins(bool enable)
 {
 	uint8_t buf[] = {
 		CH341A_CMD_UIO_STREAM,
@@ -327,7 +327,7 @@ int enable_pins(bool enable)
 	return ret;
 }
 
-int ch341a_spi_send_command(unsigned int writecnt, unsigned int readcnt, const unsigned char *writearr, unsigned char *readarr)
+static int ch341a_spi_send_command(unsigned int writecnt, unsigned int readcnt, const unsigned char *writearr, unsigned char *readarr)
 {
 	int32_t ret = 0;
 
@@ -378,7 +378,7 @@ int ch341a_spi_send_command(unsigned int writecnt, unsigned int readcnt, const u
 	return 0;
 }
 
-int ch341a_spi_shutdown(void)
+static int ch341a_spi_shutdown(void)
 {
 	if (handle == NULL)
 		return -1;
@@ -398,7 +398,7 @@ int ch341a_spi_shutdown(void)
 	return 0;
 }
 
-int ch341a_spi_init(void)
+static int ch341a_spi_init(void)
 {
 	if (handle != NULL) {
 		printf("%s: handle already set!\n", __func__);
@@ -500,4 +500,16 @@ close_handle:
 	handle = NULL;
 	return -1;
 }
+#include "ch341a_i2c.h"
+
 /* End of [ch341a_spi.c] package */
+device_spi_driver_t ch341 = {
+	.config_stream = config_stream,
+	.enable_pins = enable_pins,
+	.init = ch341a_spi_init,
+	.send_command = ch341a_spi_send_command,
+	.shutdown = ch341a_spi_shutdown,
+	.read_eeprom = ch341readEEPROM,
+	.write_eeprom = ch341writeEEPROM,
+	.parse_eep_size = parseEEPsize,
+};
