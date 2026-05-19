@@ -144,8 +144,8 @@ int32_t ch341readEEPROM(uint8_t *buffer, uint32_t bytestoread, struct EEPROM *ee
 	readbuf = buffer;
 
 	while (1) {
-		printf("Read %d%% [%d] of [%d] bytes      ", 100 * byteoffset / bytestoread, byteoffset, bytestoread);
-		printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+		printf("\rRead %d%% [%d] of [%d] bytes      ", 100 * byteoffset / bytestoread, byteoffset, bytestoread);
+		// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 		fflush(stdout);
 		ret = libusb_handle_events_timeout(NULL, &tv);
 
@@ -324,8 +324,8 @@ int32_t ch341writeEEPROM(uint8_t *buffer, uint32_t bytesum, struct EEPROM *eepro
 			return -1;
 		}
 		*/
-		printf("\bWritten %d%% [%d] of [%d] bytes      ", 100 * (bytesum - bytes) / bytesum, bytesum - bytes, bytesum);
-		printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+		printf("\rWritten %d%% [%d] of [%d] bytes      ", 100 * (bytesum - bytes) / bytesum, bytesum - bytes, bytesum);
+		// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 		fflush(stdout);
 	}
 	printf("Written 100%% [%d] of [%d] bytes      \n", bytesum - bytes, bytesum);

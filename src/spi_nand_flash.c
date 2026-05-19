@@ -363,15 +363,16 @@ static struct SPI_NAND_FLASH_INFO_T _current_flash_info_t;	/* Store the current 
 static const struct SPI_NAND_FLASH_INFO_T spi_nand_flash_tables[] = {
 	{
 
-		.mfr_id = 0xc2,
+		.mfr_id = _SPI_NAND_MANUFACTURER_ID_MXIC,
 		.dev_id = 0xf1,
+		.dev_id_2 = 0x03,
 		.ptr_name = "T30",
 		.page_size = _SPI_NAND_PAGE_SIZE_2KBYTE,
 		.oob_size = _SPI_NAND_OOB_SIZE_128BYTE,
 		.device_size =				_SPI_NAND_CHIP_SIZE_1GBIT,
 		.erase_size =				_SPI_NAND_BLOCK_SIZE_128KBYTE,
 		.dummy_mode =				SPI_NAND_FLASH_READ_DUMMY_BYTE_APPEND,
-		.read_mode =				SPI_NAND_FLASH_READ_SPEED_MODE_DUAL,
+		.read_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_SINGLE,
 		.write_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_SINGLE,
 		.feature =				SPI_NAND_FLASH_FEATURE_NONE,
 	},
@@ -3646,8 +3647,8 @@ static SPI_NAND_FLASH_RTN_T spi_nand_erase_internal( u32 addr, u32 len )
 			erase_len	+= _current_flash_info_t.erase_size;
 			if( timer_progress() )
 			{
-				printf("\bErase %d%% [%u] of [%u] bytes      ", 100 * (erase_len / 1024) / (len / 1024), erase_len, len);
-				printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+				printf("\rErase %d%% [%u] of [%u] bytes      ", 100 * (erase_len / 1024) / (len / 1024), erase_len, len);
+				// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 				fflush(stdout);
 			}
 		}
@@ -3715,7 +3716,13 @@ static SPI_NAND_FLASH_RTN_T spi_nand_read_page (u32 page_number, SPI_NAND_FLASH_
 		if(ECC_fcheck) {
 			memcpy( &_current_cache_page_oob[0],  &_current_cache_page[(ptr_dev_info_t->page_size)], (ptr_dev_info_t->oob_size) );
 			memcpy( &_current_cache_page_oob_mapping[0],  &_current_cache_page_oob[0], (ptr_dev_info_t->oob_size) );
+		} else {
+			if (ptr_dev_info_t->origin_oob_size && _current_cache_page[(ptr_dev_info_t->page_size - ptr_dev_info_t->origin_oob_size)] !=0xff) {
+				_SPI_NAND_PRINTF("bad block %x\n", page_number);
+				rtn_status = SPI_NAND_FLASH_RTN_DETECTED_BAD_BLOCK;
+			}
 		}
+
 
 		_SPI_NAND_DEBUG_PRINTF(SPI_NAND_FLASH_DEBUG_LEVEL_2, "spi_nand_read_page: _current_cache_page:\n");
 		_SPI_NAND_DEBUG_PRINTF_ARRAY(SPI_NAND_FLASH_DEBUG_LEVEL_2, &_current_cache_page[0], ((ptr_dev_info_t->page_size)+(ptr_dev_info_t->oob_size)));
@@ -3922,8 +3929,8 @@ static SPI_NAND_FLASH_RTN_T spi_nand_write_internal( u32 dst_addr, u32 len, u32 
 		ptr_rtn_len += data_len;
 		if( timer_progress() )
 		{
-			printf("\bWritten %d%% [%u] of [%u] bytes      ", 100 * ((len - remain_len) / 1024) / (len / 1024), len - remain_len, len);
-			printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+			printf("\rWritten %d%% [%u] of [%u] bytes      ", 100 * ((len - remain_len) / 1024) / (len / 1024), len - remain_len, len);
+			// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 			fflush(stdout);
 		}
 	}
@@ -4009,8 +4016,8 @@ static SPI_NAND_FLASH_RTN_T spi_nand_read_internal ( u32 addr, u32 len, u8 *ptr_
 		}
 		if( timer_progress() )
 		{
-			printf("\bRead %d%% [%u] of [%u] bytes      ", 100 * ((len - remain_len) / 1024) / (len / 1024), len - remain_len, len);
-			printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+			printf("\rRead %d%% [%u] of [%u] bytes      ", 100 * ((len - remain_len) / 1024) / (len / 1024), len - remain_len, len);
+			// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 			fflush(stdout);
 		}
 	}
@@ -4564,6 +4571,7 @@ static SPI_NAND_FLASH_RTN_T spi_nand_probe( struct SPI_NAND_FLASH_INFO_T *ptr_rt
 			ptr_rtn_device_t->erase_size  = ECC_fcheck ? spi_nand_flash_tables[i].erase_size : spi_nand_flash_tables[i].erase_size + erase_oob_size;
 			ptr_rtn_device_t->page_size   = ECC_fcheck ? spi_nand_flash_tables[i].page_size : spi_nand_flash_tables[i].page_size + oob_size;
 			ptr_rtn_device_t->oob_size    = ECC_fcheck ? oob_size : 0;
+			ptr_rtn_device_t->origin_oob_size = oob_size;
 			bmt_oob_size                  = spi_nand_flash_tables[i].oob_size;
 			ptr_rtn_device_t->dummy_mode  = spi_nand_flash_tables[i].dummy_mode;
 			ptr_rtn_device_t->read_mode   = spi_nand_flash_tables[i].read_mode;
@@ -5013,7 +5021,7 @@ SPI_NAND_FLASH_RTN_T SPI_NAND_Flash_Enable_OnDie_ECC( void )
 		else
 		{
 			spi_nand_protocol_get_status_reg_2(&feature);
-			_SPI_NAND_DEBUG_PRINTF(SPI_NAND_FLASH_DEBUG_LEVEL_1, "before setting : SPI_NAND_Flash_Enable_OnDie_ECC, status reg = 0x%x\n", feature);
+			_SPI_NAND_PRINTF("before setting : SPI_NAND_Flash_Enable_OnDie_ECC, status reg = 0x%x\n", feature);
 			
 			if (ECC_fcheck)
 				feature |= 0x10;
@@ -5023,7 +5031,7 @@ SPI_NAND_FLASH_RTN_T SPI_NAND_Flash_Enable_OnDie_ECC( void )
 
 			/* Value check*/
 			spi_nand_protocol_get_status_reg_2(&feature);
-			_SPI_NAND_DEBUG_PRINTF(SPI_NAND_FLASH_DEBUG_LEVEL_1, "after setting : SPI_NAND_Flash_Enable_OnDie_ECC, status reg = 0x%x\n", feature);
+			_SPI_NAND_PRINTF("after setting : SPI_NAND_Flash_Enable_OnDie_ECC, status reg = 0x%x\n", feature);
 		}
 	}
 

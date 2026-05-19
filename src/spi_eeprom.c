@@ -195,8 +195,8 @@ int spi_eeprom_read(unsigned char *buf, unsigned long from, unsigned long len)
 		pbuf[i] = eeprom_read_byte(&seeprom_info, i);
 		if( timer_progress() )
 		{
-			printf("\bRead %d%% [%d] of [%d] bytes      ", 100 * i / seepromsize, i, seepromsize);
-			printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+			printf("\rRead %d%% [%d] of [%d] bytes      ", 100 * i / seepromsize, i, seepromsize);
+			// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 			fflush(stdout);
 		}
 	}
@@ -234,8 +234,8 @@ int spi_eeprom_erase(unsigned long offs, unsigned long len)
 			eeprom_write_byte(&seeprom_info, i, pbuf[i]);
 		if( timer_progress() )
 		{
-			printf("\bErase %d%% [%d] of [%d] bytes      ", 100 * i / seepromsize, i, seepromsize);
-			printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+			printf("\rErase %d%% [%d] of [%d] bytes      ", 100 * i / seepromsize, i, seepromsize);
+			// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 			fflush(stdout);
 		}
 	}
@@ -272,8 +272,8 @@ int spi_eeprom_write(unsigned char *buf, unsigned long to, unsigned long len)
 			eeprom_write_byte(&seeprom_info, i, pbuf[i]);
 		if( timer_progress() )
 		{
-			printf("\bWritten %d%% [%d] of [%d] bytes      ", 100 * i / seepromsize, i, seepromsize);
-			printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+			printf("\rWritten %d%% [%d] of [%d] bytes      ", 100 * i / seepromsize, i, seepromsize);
+			// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 			fflush(stdout);
 		}
 	}

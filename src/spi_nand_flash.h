@@ -88,10 +88,14 @@ struct SPI_NAND_FLASH_INFO_T {
 	u32					page_size;	/* Page Size */
 	u32					erase_size;	/* Block Size */
 	u32					oob_size;	/* Spare Area (OOB) Size */
+	u32					origin_oob_size;	/* Spare Area (OOB) Size */
 	SPI_NAND_FLASH_READ_DUMMY_BYTE_T	dummy_mode;
 	SPI_NAND_FLASH_READ_SPEED_MODE_T	read_mode;
 	SPI_NAND_FLASH_WRITE_SPEED_MODE_T	write_mode;
 	u32					feature;
+	u8		ecc_mask;
+	u8		ecc_uncorr;
+
 };
 
 struct nand_info {

@@ -338,8 +338,8 @@ int Read_EEPROM_3wire(unsigned char *buffer, int size_eeprom)
 		delay_ms(1);
 		clock_1();
 		delay_ms(1);
-		printf("\bRead %d%% [%d] of [%d] bytes      ", 100 * l / size_eeprom, l, size_eeprom);
-		printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+		printf("\rRead %d%% [%d] of [%d] bytes      ", 100 * l / size_eeprom, l, size_eeprom);
+		// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 		fflush(stdout);
 		address++;
 	}
@@ -406,8 +406,8 @@ int Write_EEPROM_3wire(unsigned char *buffer, int size_eeprom)
 		delay_ms(1);
 		clock_1();
 		delay_ms(1);
-		printf("\bWritten %d%% [%d] of [%d] bytes      ", 100 * l / size_eeprom, l, size_eeprom);
-		printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
+		printf("\rWritten %d%% [%d] of [%d] bytes      ", 100 * l / size_eeprom, l, size_eeprom);
+		// printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 		fflush(stdout);
 		address++;
 	}

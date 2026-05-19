@@ -23,6 +23,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <time.h>
+#include <sys/stat.h>
 
 #include "flashcmd_api.h"
 #include "ch341a_spi.h"
@@ -82,7 +83,7 @@ void usage(void)
 		" -a <address>   manually set address\n"\
 		" -w <filename>  write chip with data from filename\n"\
 		" -r <filename>  read chip and save data to filename\n"\
-		" -v             verify after write on chip\n";
+		" -v             verify after write on chip or read and verify\n";
 	printf(use);
 	exit(0);
 }
@@ -93,21 +94,25 @@ static device_spi_driver_t *drivers[] = {
 	NULL,
 } ;
 device_spi_driver_t *device_opt;
-
+static void hexdump(const unsigned char *buf, unsigned long long addr, int len);
 int main(int argc, char* argv[])
 {
+#ifndef NDEBUG
+	setbuf(stdout,NULL);
+#endif
+
 	int c, vr = 0, svr = 0, ret = 0;
 	char *str, *fname = NULL, op = 0;
 	unsigned char *buf;
 	int long long len = 0, addr = 0, flen = 0, wlen = 0;
-	FILE *fp;
+	FILE *fp = NULL;
 
 	title();
 
 #ifdef EEPROM_SUPPORT
-	while ((c = getopt(argc, argv, "diIhveLkl:a:w:r:o:s:E:f:8")) != -1)
+	while ((c = getopt(argc, argv, "diIhveLkl:a:w:r:o:s:E:f:8p")) != -1)
 #else
-	while ((c = getopt(argc, argv, "diIhveLkl:a:w:r:o:s:")) != -1)
+	while ((c = getopt(argc, argv, "diIhveLkl:a:w:r:o:s:p")) != -1)
 #endif
 	{
 		switch(c)
@@ -201,9 +206,11 @@ int main(int argc, char* argv[])
 				break;
 			case 'r':
 			case 'w':
+			case 'p':
 				if(!op) {
 					op = c;
-					fname = strdup(optarg);
+					if (c != 'p')
+						fname = strdup(optarg);
 				} else
 					op = 'x';
 				break;
@@ -299,15 +306,38 @@ int main(int argc, char* argv[])
 		goto out;
 	}
 
-	if ((op == 'r') || (op == 'w')) {
+	if ((op == 'r') || (op == 'w') || (op == 'p')) {
+		if (op == 'p') {
+			if (len == 0)
+				len = 1024;
+		}
 		if(addr && !len)
 			len = flen - addr;
 		else if(!addr && !len) {
 			len = flen;
 		}
+		if (vr) {
+			fp = fopen(fname, "rb");
+			if (!fp) {
+				printf("Couldn't open file %s for verify.\n", fname);
+				free(buf);
+				goto out;
+			}
+			svr = 1;
+			// 将文件指针移动到文件末尾
+			if (fseek(fp, 0, SEEK_END) != 0) {
+				fclose(fp);
+				free(buf);
+				goto out;
+			}
+			// 获取当前位置（即文件大小）
+			len = ftell(fp);
+			fseek(fp, addr, SEEK_SET);
+		}
 		buf = (unsigned char *)malloc(len + 1);
 		if (!buf) {
 			printf("Malloc failed for read buffer.\n");
+			fclose(fp);
 			goto out;
 		}
 	}
@@ -355,27 +385,40 @@ very:
 		ret = prog.flash_read(buf, addr, len);
 		if (ret < 0) {
 			printf("Status: BAD(%d)\n", ret);
+			fclose(fp);
 			free(buf);
 			goto out;
 		}
 		if (svr) {
 			unsigned char ch1;
 			int i = 0;
-
-			fseek(fp, 0, SEEK_SET);
-			ch1 = (unsigned char)getc(fp);
-
-			while ((ch1 != EOF) && (i < len - 1) && (ch1 == buf[i++]))
+			int match = 1;
+			int err_count  = 0;
+			ret = fseek(fp, 0, SEEK_SET);
+			for (i = 0; i < len; i++) {
 				ch1 = (unsigned char)getc(fp);
-
-			if (ch1 == buf[i]){
-				printf("Status: OK\n");
-				fclose(fp);
-				free(buf);
-				goto okout;
+				if (ch1 == EOF) {
+					printf("Status: BAD (unexpected EOF at byte %d)\n", i);
+					match = 0;
+					break;
+				}
+				if (ch1 != buf[i]) {
+					if (ch1 == 0xff && buf[i] == 0) {
+						continue;
+					}
+					err_count++;
+					printf("Status: BAD (mismatch at byte %d: file=0x%02X, flash=0x%02X)\n",
+					       i, ch1, buf[i]);
+					match = 0;
+					if (err_count > 512) {
+						break;
+					}
+				}
 			}
-			else
-				printf("Status: BAD\n");
+
+			if (match) {
+				printf("Status: OK\n");
+			}
 			fclose(fp);
 			free(buf);
 			goto out;
@@ -397,6 +440,19 @@ very:
 		free(buf);
 		printf("Status: OK\n");
 		goto okout;
+	} else if (op == 'p') {
+		printf("DUMP:\n");
+		printf("Read addr = 0x%016llX, len = 0x%016llX\n", addr, len);
+		ret = prog.flash_read(buf, addr, len);
+		if (ret < 0) {
+			printf("Status: BAD(%d)\n", ret);
+			free(buf);
+			goto out;
+		}
+		hexdump(buf, addr, len);
+		free(buf);
+		printf("Status: OK\n");
+		goto okout;
 	}
 	goto okout;
 out:	//exit with errors
@@ -410,4 +466,44 @@ okout:	//exit without errors
 		device_opt->shutdown();
 	}
 	return 0;
+}
+
+
+static void hexdump(const unsigned char *buf, unsigned long long addr, int len)
+{
+	int i, j;
+
+	for (i = 0; i < len; i += 16) {
+		// 打印地址偏移
+		printf("%08llX: ", addr + i);
+
+		// 打印十六进制值
+		for (j = 0; j < 16; j++) {
+			if (i + j < len) {
+				printf("%02X ", buf[i + j]);
+			} else {
+				printf("   "); // 填充空格
+			}
+
+			// 在第8个字节后添加额外空格
+			if (j == 7) {
+				printf(" ");
+			}
+		}
+
+		printf(" |");
+
+		// 打印ASCII字符（可打印字符显示，否则显示点）
+		for (j = 0; j < 16 && (i + j) < len; j++) {
+			unsigned char c = buf[i + j];
+			if (c >= 32 && c <= 126) {
+				printf("%c", c);
+			} else {
+				printf(".");
+			}
+		}
+		printf("|\n");
+	}
+
+	printf("\nTotal %d bytes dumped.\n", len);
 }
