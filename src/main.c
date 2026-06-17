@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
 	FILE *fp = NULL;
 
 	title();
-
+	int erase_on_w = 0;
 #ifdef EEPROM_SUPPORT
 	while ((c = getopt(argc, argv, "diIhveLkl:a:w:r:o:s:E:f:8p")) != -1)
 #else
@@ -201,8 +201,12 @@ int main(int argc, char* argv[])
 			case 'e':
 				if(!op)
 					op = c;
-				else
+				else if (op == 'w'){
+					erase_on_w=1;
+				} else {
 					op = 'x';
+				}
+
 				break;
 			case 'r':
 			case 'w':
@@ -211,8 +215,12 @@ int main(int argc, char* argv[])
 					op = c;
 					if (c != 'p')
 						fname = strdup(optarg);
-				} else
+				} else if (op == 'e') {
+					op = 'w';
+				} else {
 					op = 'x';
+				}
+
 				break;
 			case 'L':
 				support_flash_list();
@@ -283,7 +291,7 @@ int main(int argc, char* argv[])
 			printf("Set manual OOB size = %d.\n", OOB_size);
 		}
 	}
-	if (op == 'e') {
+	if (op == 'e' || (op == 'w' && erase_on_w)) {
 		printf("ERASE:\n");
 		if(addr && !len)
 			len = flen - addr;
@@ -299,11 +307,13 @@ int main(int argc, char* argv[])
 		ret = prog.flash_erase(addr, len);
 		if(!ret){
 			printf("Status: OK\n");
-			goto okout;
 		}
 		else
 			printf("Status: BAD(%d)\n", ret);
-		goto out;
+
+		if (!erase_on_w) {
+			goto out;
+		}
 	}
 
 	if ((op == 'r') || (op == 'w') || (op == 'p')) {
