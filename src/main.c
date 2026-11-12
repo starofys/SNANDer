@@ -314,7 +314,9 @@ int main(int argc, char* argv[])
 			printf("Status: BAD(%d)\n", ret);
 
 		if (!erase_on_w) {
-			goto out;
+			if (ret == 0) {
+				goto okout;
+			}
 		}
 	}
 
@@ -396,7 +398,6 @@ very:
 	if (op == 'r') {
 		if (!svr) printf("READ:\n");
 		else memset(buf, 0, len);
-		printf("Read addr = 0x%016llX, len = 0x%016llX\n", addr, len);
 		ret = prog.flash_read(buf, addr, len);
 		if (ret < 0) {
 			printf("Status: BAD(%d)\n", ret);
@@ -430,12 +431,12 @@ very:
 					}
 				}
 			}
-
-			if (match) {
-				printf("Status: OK\n");
-			}
 			fclose(fp);
 			free(buf);
+			if (match) {
+				printf("Status: OK\n");
+				goto okout;
+			}
 			goto out;
 		}
 		fp = fopen(fname, "wb");
@@ -457,7 +458,6 @@ very:
 		goto okout;
 	} else if (op == 'p') {
 		printf("DUMP:\n");
-		printf("Read addr = 0x%016llX, len = 0x%016llX\n", addr, len);
 		ret = prog.flash_read(buf, addr, len);
 		if (ret < 0) {
 			printf("Status: BAD(%d)\n", ret);

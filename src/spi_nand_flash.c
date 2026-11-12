@@ -5082,12 +5082,51 @@ int nandflash_init(int rom_base)
 		return -1;
 	}
 }
+typedef struct {
+	u32 block_offset;   /* 块号 */
+	u32 page_in_block;  /* 块内页号 0 ~ pages_per_blk-1 */
+	u32 byte_in_page;   /* 页内字节偏移 0 ~ page_size-1 */
+	int aligned;        /* 1=块对齐, 0=非对齐 */
+} addr_map_t;
+
+/*
+ * 把数据区逻辑地址拆解为 块号 / 块内页 / 页内字节
+ * 返回 0 成功；-1 参数非法
+ * 注意：aligned==0 时，说明该地址不能简单用 Block Offset 表达起始，
+ *       硕飞这类“块偏移”烧录方式无法正确表达，需修正分区表或改用其它烧录方式。
+ */
+static int snander_addr_map(const struct SPI_NAND_FLASH_INFO_T *flash,
+			    u32 addr, addr_map_t *m)
+{
+	u32 page_size, pages_per_blk, block_size;
+
+	if (!flash || !m || flash->erase_size == 0 || flash->page_size == 0)
+		return -1;
+
+	page_size     = flash->page_size;
+	block_size    = flash->erase_size;
+	pages_per_blk = block_size / page_size;   /* 由块/页推出每块页数 */
+
+	m->block_offset  = addr / block_size;
+	m->page_in_block = (addr % block_size) / page_size;
+	m->byte_in_page  = addr % page_size;
+	m->aligned       = ((addr % block_size) == 0);
+
+	return 0;
+}
+
 
 int nandflash_read(unsigned long from, unsigned long len, unsigned long *retlen, unsigned char *buf, SPI_NAND_FLASH_RTN_T *status)
 {
 	struct SPI_NAND_FLASH_INFO_T *ptr_dev_info_t;
 
 	ptr_dev_info_t  = _SPI_NAND_GET_DEVICE_INFO_PTR;
+	addr_map_t m = {0};
+	snander_addr_map(ptr_dev_info_t, from, &m);
+
+	printf("READ addr 0x%016llX-0x%016llX (block_size=0x%X, block_offset=%u, page_in_block=%u, byte_in_page=%u)\n",
+	   from,len, ptr_dev_info_t->erase_size,
+	   m.block_offset, m.page_in_block, m.byte_in_page);
 
 	timer_start();
 	if( SPI_NAND_Flash_Read_NByte(from, len, (u32 *)retlen, buf, ptr_dev_info_t->read_mode, status) == SPI_NAND_FLASH_RTN_NO_ERROR )
