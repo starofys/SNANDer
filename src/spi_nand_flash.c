@@ -3588,7 +3588,17 @@ SPI_NAND_FLASH_RTN_T spi_nand_erase_block ( u32 block_index)
 
 	return rtn_status;
 }
+static u32 align_addr(u32 dst_addr) {
+	struct SPI_NAND_FLASH_INFO_T *ptr_dev_info_t;
+	ptr_dev_info_t = _SPI_NAND_GET_DEVICE_INFO_PTR;
+	uint32_t main_page_size = ptr_dev_info_t->page_size - ptr_dev_info_t->origin_oob_size;
+	uint64_t main_page_number = dst_addr / main_page_size;
+	uint64_t main_page_offset = dst_addr % main_page_size;
+	/* 将主数据区偏移映射到物理页偏移 */
+	dst_addr = main_page_number * ptr_dev_info_t->page_size + main_page_offset;
+	return dst_addr;
 
+}
 /*------------------------------------------------------------------------------------
  * FUNCTION: static SPI_NAND_FLASH_RTN_T spi_nand_erase_internal( u32     addr,
  *                                                                u32     len )
@@ -3619,6 +3629,11 @@ static SPI_NAND_FLASH_RTN_T spi_nand_erase_internal( u32 addr, u32 len )
 
 	/* Switch to manual mode*/
 	_SPI_NAND_ENABLE_MANUAL_MODE();
+
+	if (ECC_fcheck == 0) {
+		addr = align_addr(addr);
+	}
+
 
 	SPI_NAND_Flash_Clear_Read_Cache_Data();
 
@@ -3717,9 +3732,13 @@ static SPI_NAND_FLASH_RTN_T spi_nand_read_page (u32 page_number, SPI_NAND_FLASH_
 			memcpy( &_current_cache_page_oob[0],  &_current_cache_page[(ptr_dev_info_t->page_size)], (ptr_dev_info_t->oob_size) );
 			memcpy( &_current_cache_page_oob_mapping[0],  &_current_cache_page_oob[0], (ptr_dev_info_t->oob_size) );
 		} else {
-			if (ptr_dev_info_t->origin_oob_size && _current_cache_page[(ptr_dev_info_t->page_size - ptr_dev_info_t->origin_oob_size)] !=0xff) {
-				_SPI_NAND_PRINTF("bad block %x\n", page_number);
-				rtn_status = SPI_NAND_FLASH_RTN_DETECTED_BAD_BLOCK;
+			if (ptr_dev_info_t->origin_oob_size) {
+				u8 first  = _current_cache_page[(ptr_dev_info_t->page_size - ptr_dev_info_t->origin_oob_size)];
+				if (first != 0xff) {
+					_SPI_NAND_PRINTF("bad block %x oob=%x\n", page_number,first);
+					rtn_status = SPI_NAND_FLASH_RTN_DETECTED_BAD_BLOCK;
+				}
+
 			}
 		}
 
@@ -3888,6 +3907,11 @@ static SPI_NAND_FLASH_RTN_T spi_nand_write_internal( u32 dst_addr, u32 len, u32 
 	*ptr_rtn_len = 0;
 	ptr_dev_info_t = _SPI_NAND_GET_DEVICE_INFO_PTR;
 	remain_len = len;
+
+	if (ECC_fcheck == 0) {
+		dst_addr = align_addr(dst_addr);
+	}
+
 	write_addr = dst_addr;
 
 	_SPI_NAND_SEMAPHORE_LOCK();
@@ -3969,6 +3993,11 @@ static SPI_NAND_FLASH_RTN_T spi_nand_read_internal ( u32 addr, u32 len, u8 *ptr_
 	SPI_NAND_FLASH_RTN_T rtn_status = SPI_NAND_FLASH_RTN_NO_ERROR;
 
 	ptr_dev_info_t = _SPI_NAND_GET_DEVICE_INFO_PTR;
+
+
+	if (ECC_fcheck == 0) {
+		addr = align_addr(addr);
+	}
 
 	read_addr = addr;
 	remain_len = len;

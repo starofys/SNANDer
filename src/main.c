@@ -83,6 +83,7 @@ void usage(void)
 		" -a <address>   manually set address\n"\
 		" -w <filename>  write chip with data from filename\n"\
 		" -r <filename>  read chip and save data to filename\n"\
+  		" -p read and hexdump \n"\
 		" -v             verify after write on chip or read and verify\n";
 	printf(use);
 	exit(0);
@@ -217,6 +218,7 @@ int main(int argc, char* argv[])
 						fname = strdup(optarg);
 				} else if (op == 'e') {
 					op = 'w';
+					fname = strdup(optarg);
 				} else {
 					op = 'x';
 				}
@@ -370,6 +372,9 @@ int main(int argc, char* argv[])
 		}
 		if(len == flen)
 			len = wlen;
+		if (len > wlen) {
+			len = wlen;
+		}
 		printf("Write addr = 0x%016llX, len = 0x%016llX\n", addr, len);
 		ret = prog.flash_write(buf, addr, len);
 		if(ret > 0) {
