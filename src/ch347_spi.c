@@ -106,6 +106,23 @@ typedef struct _DEV_INFOR {
     CHAR FuncDescStr[64];        // 接口功能描述符
     UCHAR FirewareVer;           // 固件版本,十六进制值
 } mDeviceInforS, *mPDeviceInforS;
+
+
+//SPI 控制器配置
+typedef struct _SPI_CONFIG{
+	UCHAR iMode; // 0-3:SPI Mode0/1/2/3
+	UCHAR iClock; // 0=60MHz, 1=30MHz, 2=15MHz, 3=7.5MHz,4=3.75MHz,5=1.875MHz, 6=937.5KHz，7=468.75KHz
+	UCHAR iByteOrder; // 0=低位在前(LSB), 1=高位在前(MSB)
+	USHORT iSpiWriteReadInterval; // SPI 接口常规读取写入数据命令，单位为 uS
+	UCHAR iSpiOutDefaultData; // SPI 读数据时默认输出数据
+	ULONG iChipSelect; // 片选控制, 位 7 为 0 则忽略片选控制, 位 7 为 1 则参数有效: 位 1 位 0 为 00/01 分别选择CS1/CS2 引脚作为低电平有效片选
+	UCHAR CS1Polarity; // 位 0:片选 CS1 极性控制:0:低电平有效；1:高电平有效；
+	UCHAR CS2Polarity; // 位 0:片选 CS2 极性控制:0:低电平有效；1:高电平有效；
+	USHORT iIsAutoDeativeCS; // 操作完成后是否自动撤消片选
+	USHORT iActiveDelay; // 设置片选后执行读写操作的延时时间,单位 us
+	ULONG iDelayDeactive; // 撤消片选后执行读写操作的延时时间,单位 us
+} mSpiCfgS,*mPSpiCfgS;
+
 typedef int(__stdcall  * pCH347OpenDevice)(unsigned long iIndex);
 
 typedef int(__stdcall * pCH347CloseDevice)(unsigned long iIndex);
@@ -136,6 +153,11 @@ typedef unsigned long(__stdcall * pCH347ReadData)(
 					  is the length to be read, and the
 					  return is the actual read length */
 typedef unsigned long(__stdcall  * pCH347GetDeviceInfor)(unsigned long iIndex, mDeviceInforS *DevInformation);
+
+typedef BOOL (__stdcall  * pCH347SPI_GetCfg)(unsigned long iIndex, mSpiCfgS *cfg);
+typedef BOOL (__stdcall  * pCH347SPI_Init)(unsigned long iIndex, mSpiCfgS *cfg);
+
+
 HMODULE uhModule = 0;
 ULONG ugIndex = -1;
 pCH347OpenDevice CH347OpenDevice;
@@ -144,6 +166,8 @@ pCH347SetTimeout CH347SetTimeout;
 pCH347ReadData CH347ReadData;
 pCH347WriteData CH347WriteData;
 pCH347GetDeviceInfor CH347GetDeviceInfor;
+pCH347SPI_GetCfg CH347SPI_GetCfg;
+pCH347SPI_Init CH347SPI_Init;
 BOOL DevIsOpened = FALSE; /* Whether the device is turned on */
 #endif
 struct libusb_device_handle *devHandle = NULL;
@@ -353,6 +377,21 @@ static uint16_t read_le16(const uint8_t *base, size_t offset) {
 static int config_stream(unsigned int speed)
 {
 	int32_t ret;
+#if 0
+	mSpiCfgS spiCfg = {
+		.iMode = 0,                       // 对应 buff[9]/buff[11]
+		.iClock = speed,            // 对应 buff[15]
+		.iByteOrder = 1,                  // MSB first
+		.iSpiWriteReadInterval = 0,       // buff[5]
+		.iSpiOutDefaultData = 0,          // buff[6]
+		.iChipSelect = 0,              // bit7 有效，选 CS1
+		.CS1Polarity = 0,                 // 低有效
+		.CS2Polarity = 0,
+		.iDelayDeactive = 0
+	    };
+	ret = CH347SPI_Init(ugIndex,&spiCfg);
+#endif
+
 	uint8_t buff[29] = {
 		[0] = CH347_CMD_SPI_SET_CFG,
 		[1] = (sizeof(buff) - 3) & 0xFF,
@@ -405,6 +444,9 @@ static int config_stream(unsigned int speed)
 		printf("Could not receive configure SPI command response\n");
 	}
 #endif
+
+
+
 	return ret;
 }
 
@@ -640,12 +682,21 @@ static int ch347_spi_init(void)
 				uhModule, "CH347SetTimeout");
 			CH347GetDeviceInfor = (pCH347GetDeviceInfor)GetProcAddress(
 				uhModule, "CH347GetDeviceInfor");
+
+			CH347SPI_Init = (pCH347SPI_Init)GetProcAddress(
+				uhModule, "CH347SPI_Init");
+
+			CH347SPI_GetCfg = (pCH347SPI_GetCfg)GetProcAddress(
+				uhModule, "CH347SPI_GetCfg");
+
 			if (CH347OpenDevice == NULL || CH347CloseDevice == NULL
 			    || CH347SetTimeout == NULL || CH347ReadData == NULL
 			    || CH347WriteData == NULL || CH347GetDeviceInfor == NULL) {
 				printf("ch347_spi_init error\n");
 				return -1;
 			}
+		} else {
+			printf("load %s dll error\n","CH347DLLA64.DLL");
 		}
 	}
 	for (int i = 0;i < 4; i++){

@@ -372,8 +372,23 @@ static const struct SPI_NAND_FLASH_INFO_T spi_nand_flash_tables[] = {
 		.device_size =				_SPI_NAND_CHIP_SIZE_1GBIT,
 		.erase_size =				_SPI_NAND_BLOCK_SIZE_128KBYTE,
 		.dummy_mode =				SPI_NAND_FLASH_READ_DUMMY_BYTE_APPEND,
-		.read_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_SINGLE,
-		.write_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_SINGLE,
+		.read_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_QUAD,
+		.write_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_QUAD,
+		.feature =				SPI_NAND_FLASH_FEATURE_NONE,
+	},
+	{
+
+		.mfr_id = _SPI_NAND_MANUFACTURER_ID_MXIC,
+		.dev_id = 0x24,
+		.dev_id_2 = 0x03,
+		.ptr_name = "MX35LF2GE4AD",
+		.page_size = _SPI_NAND_PAGE_SIZE_2KBYTE,
+		.oob_size = _SPI_NAND_OOB_SIZE_128BYTE,
+		.device_size =				_SPI_NAND_CHIP_SIZE_1GBIT,
+		.erase_size =				_SPI_NAND_BLOCK_SIZE_128KBYTE,
+		.dummy_mode =				SPI_NAND_FLASH_READ_DUMMY_BYTE_APPEND,
+		.read_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_QUAD,
+		.write_mode =				SPI_NAND_FLASH_WRITE_SPEED_MODE_QUAD,
 		.feature =				SPI_NAND_FLASH_FEATURE_NONE,
 	},
 	{
@@ -5124,7 +5139,7 @@ int nandflash_read(unsigned long from, unsigned long len, unsigned long *retlen,
 	addr_map_t m = {0};
 	snander_addr_map(ptr_dev_info_t, from, &m);
 
-	printf("READ addr 0x%016llX-0x%016llX (block_size=0x%X, block_offset=%u, page_in_block=%u, byte_in_page=%u)\n",
+	printf("READ addr 0x%016llX-0x%016llX (block_size=0x%X, block_offset=%u, page_in_block=%u, bytSPI_NAND_FLASH_WRITE_SPEED_MODE_QUADe_in_page=%u)\n",
 	   from,len, ptr_dev_info_t->erase_size,
 	   m.block_offset, m.page_in_block, m.byte_in_page);
 
